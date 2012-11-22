@@ -63,6 +63,7 @@ Gem::Specification.new do |s|
     "lib/vips/reader.rb",
     "lib/vips/version.rb",
     "lib/vips/writer.rb",
+    "lib/vips/composite.rb",
     "ruby-vips.gemspec",
     "ruby.supp"
   ]
