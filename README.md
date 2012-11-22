@@ -1,3 +1,11 @@
+WTF does this fork do? Adds image compositing as provided here:
+
+https://github.com/jcupitt/ruby-vips/issues/28#issuecomment-9014826
+
+Hopefully official support is added soon, until then... 
+
+Note: There is one minor difference between the code from the link and what is implemented here. I opted to use Sets instead of patching Range.
+
 # ruby-vips : A fast image processing extension for Ruby.
 
 [![Build Status](https://secure.travis-ci.org/jcupitt/ruby-vips.png)](http://travis-ci.org/jcupitt/ruby-vips)
