@@ -56,7 +56,7 @@ static VALUE
 writer_meta_remove(VALUE obj, const char* name)
 {
     GetImg(obj, data, im);
-#if IM_MAJOR_VERSION > 7 || IM_MINOR_VERSION >= 22
+#if ATLEAST_VIPS( 7, 22 )
 	if (im_meta_remove(im, name))
 		return Qfalse;
 #else
@@ -147,8 +147,23 @@ jpeg_buf_internal(VALUE obj, VALUE quality)
 
     GetImg(obj, data, im);
 
+#if ATLEAST_VIPS( 7, 28 )
+{
+    size_t len;
+
+    if (vips_jpegsave_buffer(im, &buf, &len,
+        "Q", NUM2INT(quality),
+	NULL))
+        vips_lib_error();
+
+    /* Argh.
+     */
+    length = len;
+}
+#else
     if (im_vips2bufjpeg(im, NULL, NUM2INT(quality), &buf, &length)) 
         vips_lib_error();
+#endif
 
     return rb_tainted_str_new(buf, length);
 }
@@ -197,19 +212,25 @@ ppm_write_internal(VALUE obj, VALUE path)
 static VALUE
 png_buf_internal(VALUE obj, VALUE compression, VALUE interlace)
 {
-#if IM_MAJOR_VERSION > 7 || IM_MINOR_VERSION >= 23
     char *buf;
     size_t length;
     GetImg(obj, data, im);
 
+#if ATLEAST_VIPS( 7, 28 )
+    if (vips_pngsave_buffer(im, &buf, &length,
+        "compression", NUM2INT(compression),
+	"interlace", NUM2INT(interlace),
+	NULL))
+        vips_lib_error();
+#elif ATLEAST_VIPS( 7, 23 )
     if (im_vips2bufpng(im, NULL, NUM2INT(compression), NUM2INT(interlace),
         &buf, &length)) 
         vips_lib_error();
-
-    return rb_tainted_str_new(buf, length);
 #else
     rb_raise(eVIPSError, "This method is not implemented in your version of VIPS");
 #endif
+
+    return rb_tainted_str_new(buf, length);
 }
 
 /* :nodoc: */

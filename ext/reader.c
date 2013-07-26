@@ -51,6 +51,48 @@ reader_read_internal(VALUE obj, VALUE path, VALUE flags)
     return img_init(cVIPSImage, im_new);
 }
 
+static VALUE
+jpeg_buf_internal(VALUE obj, VALUE buf, VALUE shrink, VALUE fail)
+{
+    VipsImage *im_new;
+
+    im_new = NULL; 
+
+#if ATLEAST_VIPS( 7, 28 )
+    buf = StringValue(buf);
+
+    if (vips_jpegload_buffer(RSTRING_PTR(buf), RSTRING_LEN(buf), &im_new, 
+        "shrink", NUM2INT(shrink),
+        "fail", NUM2INT(fail),
+	NULL))
+        vips_lib_error();
+#else
+    rb_raise(eVIPSError, "This method is not implemented in your version of VIPS");
+#endif
+
+    return img_init(cVIPSImage, im_new);
+}
+
+static VALUE
+png_buf_internal(VALUE obj, VALUE buf)
+{
+    VipsImage *im_new;
+
+    im_new = NULL; 
+
+#if ATLEAST_VIPS( 7, 34 )
+    buf = StringValue(buf);
+
+    if (vips_pngload_buffer(RSTRING_PTR(buf), RSTRING_LEN(buf), &im_new, 
+	NULL))
+        vips_lib_error();
+#else
+    rb_raise(eVIPSError, "This method is not implemented in your version of VIPS");
+#endif
+
+    return img_init(cVIPSImage, im_new);
+}
+
 /* :nodoc: */
 
 static VALUE
@@ -118,6 +160,7 @@ init_Reader(void)
      */
 
     VALUE jpeg_reader = rb_define_class_under(mVIPS, "JPEGReader", reader);
+    rb_define_private_method(jpeg_reader, "buf_internal", jpeg_buf_internal, 3);
     reader_fmt_set(jpeg_reader, "jpeg");
 
     /*
@@ -139,6 +182,7 @@ init_Reader(void)
      */
 
     VALUE png_reader = rb_define_class_under(mVIPS, "PNGReader", reader);
+    rb_define_private_method(png_reader, "buf_internal", png_buf_internal, 1);
     reader_fmt_set(png_reader, "png");
 
     /*

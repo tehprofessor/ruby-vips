@@ -66,18 +66,50 @@ $ apt-get install libvips-dev
 ### OS X Prerequisites.
 
 ```bash
-$ brew install --use-llvm vips
+$ brew tap homebrew/science
+$ brew install vips
 ```
 
-You may need to set your PKG_CONFIG_PATH before vips can see your libpng. Try
-something like:
+This will give you a very bare-bones vips, missing things like imagemagick
+loading, openslide support, FFTs, and so on. To get a list of all the optional
+dependencies, try:
 
 ```bash
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/X11/lib/pkgconfig
+$ brew info vips
 ```
 
-See the Mac OS X Lion section in [Installation on various
-platforms](https://github.com/jcupitt/ruby-vips/wiki/installation-on-various-platforms).
+For a full-fat version, try:
+
+```bash
+$ brew install vips --with-cfitsio --with-fftw --with-imagemagick \
+    --with-libexif --with-liboil --with-libtiff --with-little-cms \
+    --with-openexr --with-openslide --with-pango
+```
+
+If you want to build things outside homebrew which depend on vips,
+such as ruby-vips, your pkg-config will need to be working. You
+need to point pkg-config at the homebrew area, and, additionally, at
+homebrew's libxml2 area:
+
+In your .profile, add something like:
+
+```bash
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig
+```
+
+To verify that your vips install is correct and working, try:
+
+```bash
+$ vips --version
+vips-7.32.1-Mon May 20 10:01:38 BST 2013
+```
+
+To verrify that your pkg-config is working correctly with vips, try:
+
+```bash
+$ pkg-config vips --libs
+-L/usr/local/Cellar/vips/7.32.1/lib ... a lot of stuff
+```
 
 TODO: Describe & test with macports.
 
@@ -92,16 +124,16 @@ platforms](https://github.com/jcupitt/ruby-vips/wiki/installation-on-various-pla
 $ gem install ruby-vips
 ```
 
-Alternatively, for a debug build:
-
-```bash
-$ gem install ruby-vips -- --enable-debug
-```
-
 or include it in Gemfile:
 
 ```ruby
 gem 'ruby-vips'
+```
+
+For a debug build:
+
+```bash
+$ gem install ruby-vips -- --enable-debug
 ```
 
 ## Documentation.
@@ -161,6 +193,37 @@ Image.jpeg('large.png', :sequential => true).shrink(2).png('out.png')
 # If you want to let vips determine file formats, you can use the generic
 # reader and writer:
 Image.new('mypic.jpg').shrink(2).write('out.png')
+
+# You can also read and write images from memory areas. For example:
+
+jpeg_data = IO.read('mypic.jpg')
+reader = JPEGReader.new(jpeg_data, :shrink_factor => 2, :fail_on_warn => true)
+im = reader.read_buffer
+
+# As above, the image will not be processed until the .to_memory() method 
+# is called, and then will only decompress the section being processed. 
+# You will need to have all of the compressed data in memory at once though. 
+
+# Note that this means you will get a coredump if you free the compressed
+# image buffer (jpeg_data above) before the write has completed.
+
+writer = PNGWriter.new(im, :compression => 2, :interlace => false)
+png_data = writer.to_memory
+IO.write('out.png', png_data)
+
+# Only JPEG, PNG and uncompressed memory images are supported at the moment,
+# and png memory read is only in vips-7.34 and later.
+
+# We hope to add other formats in future. 
+
+png_data = IO.read('mypic.png')
+reader = PNGReader.new(png_data)
+im = reader.read_buffer
+
+writer = JPEGWriter.new(im, :quality => 50)
+jpeg_data = writer.to_memory
+IO.write('out.jpg', jpeg_data)
+
 ```
 
 ## Why use ruby-vips?

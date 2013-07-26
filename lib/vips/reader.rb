@@ -65,7 +65,7 @@ module VIPS
     end
 
     def read
-      str = "#{@path}:#{shrink_factor}"
+      str = "#{@path}:#{@shrink_factor}"
       str << "," 
       str << "fail" if @fail_on_warn
 
@@ -77,6 +77,18 @@ module VIPS
       end
 
       @_im = read_retry str, seq
+    end
+
+    def b_to_i(b)
+      if b
+        1
+      else
+        0
+      end
+    end
+
+    def read_buffer
+      @_im = buf_internal @path, @shrink_factor, b_to_i(@fail_on_warn)
     end
 
     # Shrink the jpeg while reading from disk. This means that the entire image
@@ -183,15 +195,22 @@ module VIPS
     end
 
     def read
-      str = "#{@path}:"
+      # some old versions of vips (eg. 7.26) have a bug in the png reader where
+      # the ':' is not tripped from the filename in the ispng test ... only put
+      # the ':' there if we have to
+      str = "#{@path}"
 
       seq = 0
       if VIPS.sequential_mode_supported?
-        str << "sequential" if @sequential
+        str << ":sequential" if @sequential
         seq = 1
       end
 
       @_im = read_retry str, seq
+    end
+
+    def read_buffer
+      @_im = buf_internal @path
     end
   end
 
